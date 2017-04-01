@@ -1,0 +1,360 @@
+
+Using Maestro on the command line, an Introduction and Tutorial 
+
+This is a brief introduction to get you started on IWS. 
+
+IWS (Ibm Workload Scheduler), formally TWS (Tivoli Workload Scheduler),
+or "The Scheduler formally known as Maestro".
+
+
+What is IWS?
+IWS is like a centralized cron for a large number of computers, starting programs on the computers based on time of day (like cron does), as well as based on whether a certain data file is available, if another program has finished running, or other conditions. 
+Because IWS organizes all its computers in a system, a program on computerB can be set to run after a program on computerA. If you want to run a database backup on a db computer, you can have the backup wait and run after the evening data-updates program has finished. Or you can set a file transfer to wait until the data-creation program has finished.
+IWS is sort of a scripted cron, though a very clunky scripting language, a language without being able to easily set variables and without proper 'if' statements. 
+
+
+
+Getting Started
+I recommend doing these steps on a test or development computer. 
+
+IWS organizes jobs (the programs it runs) by computerName#jobstreamName.jobName . This is important to remember as you will need this for every command.
+
+Some definitions:
+conman (Websters): a person who tricks other people in order to get their money
+       (IBM): the program to see what is running via IWS, shortened from "console manager"
+composer: the program to see how IWS is set up. 
+  composer v. conman: conman looks at the daily running of jobs, actual values and program outputs. composer looks at the definitions of jobs, definitions jobstreams and settings.
+cpu: in IWS, cpu is synonomous with computer name.
+job: a program which is run by IWS.  
+jobstream: a set of jobs grouped together in IWS
+schedule: the old name for jobstream.
+
+
+Harmless Commands to Start With
+Run commands that show what is set up and what is running in IWS. These commands do not change things so you can run these without fear of breaking IWS.
+
+CONMAN:
+See what your system is running. conman is the command to see this. conman takes a subcommand plus the name of a computer, '#', jobstream, '.' and job. Depending on the subcommand, the computerName, jobstreamName, jobName may not be needed.
+
+
+See what computers are IWS is running on:
+conman sc
+     sc = show cpu or show computers
+     output is:
+ computer1  ........ DMM
+ computer2  ........ FTA
+ computer3  ........ FTA
+You won't need this command often, but it can tell you the computerNames you will need for other commands. The additional output is mostly useful for administrators.
+
+
+You may need to set some Unix environment variables to make the output correct. To see what has been set:
+env | grep MAEST
+If you do not see these two set, run these commands:
+export MAESTROLINES=0              # this turns off IWS' version of the more command.
+export MAESTRO_OUTPUT_FORMAT=LONG
+
+
+See what is running on computer1. Choose the computer name from the 'conman sc' command above:
+conman ss computer1#jobstreamName
+    ss = showSchedule (remember "Schedule" == "jobStream")
+	If you do not know jobstreamName the next part will help find that.
+
+
+IWS uses the @ command for the wild card character like * is on most systems. We will use this to find what is running, so try the command like this:
+conman ss computer1#@
+  It will show all the jobstreams set to run today on computer1.
+  Or even:
+conman ss @#@
+  to show all jobstreams on all computers.
+  this is likely way too much output, so filter it by providing partial names of what you would like to see:
+conman ss computer1#@partialName@
+  using part of a jobstream name in the command.
+
+
+To see what is running inside one of these jobstreams, run conman showJob:
+conman sj computer1#jobstream1
+  sj = show job
+  Its output is:
+COMPUTERNAME   #JOBSTREAMNANE                      (start time) (duration) (things keeping it from starting)
+            JOBNAME1             SUCC                 09:43         5
+            JOBNAME2             EXEC                 09:49        (15)
+            JOBNAME3             HOLD                              (1)       JOBNAME2
+
+This shows the first job in the jobstream has finished successfully, starting at 9:43 AM and taking 5 minutes to run. The second job, JOBNAME2, is executing. It started at 9:49 and is estimated to take 15 minutes. Jobname3 won't be started until jobname2 has completed.
+
+
+To see what program runs on the computer, rerun the command with 'info' appended:
+conman sj computer1#jobstream1  info
+ This lists the jobs' names and what programs they actually run. It truncates some of the output, so the 'info' argument is not used much.
+
+
+To be even more specific in your command, add . and the job name to the previous command:
+command-prompt$> conman sj computer1#jobstream1.@                    << shows all jobs
+command-prompt$> conman sj computer1#jobstream1.jobname1             << shows only job1
+ or
+command-prompt$> conman sj computer1#jobstream1.jobname1 info
+
+
+
+If the output has "HOLD" in the line, the job has not run yet:
+computer1   #jobstream1
+          job1              0   0   HOLD  #waiting on something
+
+If the job is running the output will say "EXEC":
+computer1   #jobstream1
+          jobname1          1   1   EXEC
+  so the job is executing
+
+Once the job has completed its line will have "SUCC" or "ABEND"
+computer1   #jobstream1
+          job1              1   1   SUCC (or ABEND)    0 
+"SUCC" is good. It stands for success.
+"ABEND" is bad. It stands for Abnormal END, a mainframe term for error (ABnormal END).
+
+
+Once a job has started you can see its output by appending " stdl" to the "conman sj" command:
+conman sj computer1#jobstream1.job1 stdl
+  "stdl" = "standard list" is the program's output.
+
+If output is too long to see on one page, use the more command (or less command on Linux).
+command-prompt$> conman sj computer1#jobstream1.job1 stdl  | more 
+command-prompt$> conman sj computer1#jobstream1.job1 stdl  | less 
+
+You can see the output of all the jobs in a jobstream by using a wildcard @:
+command-prompt$> conman sj computer1#jobstream1.@
+command-prompt$> conman sj computer1#jobstream1.@ stdl  | less 
+
+The output starts with a header showing JobName, Job Definition, User (LOGON), and start time. 
+=============================================================================
+= JOB = ....
+= LOGON = username
+= TIME = Sat Apr  1 13:24:08 EDT 2017
+=
+=============================================================================
+ Whatever the program "  " spits out in here. 
+  ...
+ At the end of the output you see a footer:
+=============================================================================
+= JOB = ....
+= EXIT = 0   (or some number, 0 == success)
+= TIME = Sat Apr  1 13:24:08 EDT 2017
+= DURATION =  00:03    (for 3 seconds)
+=============================================================================
+
+With these commands you can view what is happening on the computers. Later we will look into how to change what runs, but now we will look at a normal jobstream (aka schedule) definition. Then we will look at composer commands to work with the jobstream definitions.
+
+COMPOSER:
+composer is the program that interacts with IWS jobstream and job definitions. composer is used for long-term changes, and to view settings. Before we practice composer commands, we will look at jobstream and job definitions
+
+A jobstream (schedule) is a group of jobs. A jobstream (schedule) can be set to run at a particular time and dates. In this case, running on computer named computer1 at 3:30 PM.
+
+SCHEDULE COMPUTER1#JOB-STREAM1                      << jobstreamName
+ON RUNCYCLE WEEKLY BYDAY "MO,WE,FR"                 << days it shoud run
+AT 1530                                             << start time
+:
+JOB1                                                   << jobName
+JOB2
+  FOLLOWS JOB1                                         << holds job2 until job1 completes
+JOB3
+  FOLLOWS JOB2                                         << holds job3 until job2 completes
+END                                                 << end of schedule (aka jobstream)
+
+#  The "FOLLOWS JOBx" lines above make the jobs run sequentially. Without the "follows" the jobs could all start simultaneously.
+
+
+Where job1,2,3 are defined in the system, say:
+$JOBS
+
+COMPUTER1#JOB1
+SCRIPTNAME "date; cat /usr/passwd"
+STREAMLOGON david
+DESCRIPTION "pointless example unix commands"
+SYSTEM  Unix
+RECOVERY STOP
+
+COMPUTER1#JOB2
+SCRIPTNAME "sleep 125; date"
+STREAMLOGON david
+DESCRIPTION "pointless example unix commands"
+SYSTEM  Unix
+RECOVERY STOP
+
+COMPUTER1#JOB3
+SCRIPTNAME "echo 'job 3 does nothing much'"
+STREAMLOGON david
+DESCRIPTION "pointless example unix commands"
+SYSTEM  Unix
+RECOVERY STOP
+
+
+
+composer 
+To see how jobstreams and jobs are defined in the system, use the composer command.
+The composer command is used to interact with how IWS is set up. 
+composer is used to view job and schedule definitions.
+composer is used to define new jobs and jobstreams, to set times and dates of when jobstreams will run. 
+Think of composer as working with long-term settings in IWS, and conman for the day-to-day running.
+
+Again, the commands listed here are to view what you have and not to change anything. They are safe to run without messing up anyone's work.
+
+Like conman composer requires an additional subcommand. Two of these are "list" and "display".
+
+See what jobstreams are defined:
+composer list schedule
+composer list js                           # js == jobstream == schedule
+ or limit the list to computer1:
+composer list schedule= computer1#@ 
+ or to see the schedules named "backup" on computer1:
+composer list schedule = computer1#@back@
+If you do not know what schedules to look at, pick one from the "composer list schedule" command.
+
+composer display
+Find a jobstream to look at in more detail and use it for the following "display" command.
+
+To see what jobs a jobstream runs use the composer display command:
+command-prompt$> composer display schedule= computer1#scheduleName
+
+
+command-prompt$> composer display schedule= computer1#job-stream1
+     (~9 lines of ibm clutter and then the info)
+SCHEDULE COMPUTER1#JOB-STREAM1
+ON RUNCYCLE "WEEKLY;BYDAY MO,WE,FR"
+AT 1530
+:
+JOB1
+JOB2
+  FOLLOWS JOB1
+JOB3
+  FOLLOWS JOB2
+END
+
+View what is in job1's definition:
+command-prompt$> composer display job = computer1#job1
+     (9 lines of ibm clutter and trademarks and copyrights)
+COMPUTER1#JOB1
+SCRIPTNAME "date; cat /usr/passwd"
+STREAMLOGON david
+DESCRIPTION "pointless example unix commands"
+SYSTEM  Unix
+RECOVERY STOP
+
+
+
+
+So far we have just looked at the system. None of the above commands change anything, so feel free to practice them. These will give you a feel for the system and the commands. 
+
+
+
+
+
+The "schedule =" is the default value in composer, so you may omit it.
+These two commands are the same:
+  composer list schedule = computer1#@back@
+  composer list  computer1#@back@
+  composer display  computer1#@back@
+
+  composer list   j computer1#job1
+  composer display j computer1#job1
+
+
+
+How IWS is Organized
+
+IWS' stores jobstream definitions and job definitions in its database. You interact with this data using the composer command you saw above. This is the long-term storage of job and jobstream definitions. You interact with this database using composer.
+
+Once a day IWS uses the information in the database to create the plan for the next 24 hours. The daily plan starts jobstreams and keeps track of successful and unsuccessful program runs. You interact with the daily plan using conman.
+
+
+
+
+
+ "jnextday" is the process of creating a day's schedule from the IWS database.
+You can change the database with the composer command. These changes won't affect today's plan. These changes will take affect at jnextday. 
+Once the day's plan has been created, you can view it and change it with the conman command. Composer won't affect today's plan, unless you run additional commands to submit the changes into today's plan.
+
+Two of the main tables in IWS are jobs and jobstreams.
+
+
+
+
+
+
+
+Making Simple Changes:
+The easiest way to make a new job is to modify an existing one. We will start by creating a file with a job, modifying it, and putting it into the IWS jobs database.
+
+Find a job name from the earlier composer commands ( composer list j computer1#@ ).
+Create a jobs file:
+command-prompt$> composer create my.jobs j = computer1#job1 
+command-prompt$> cat my.jobs
+$JOBS
+COMPUTER1#JOB1
+ DOCOMMAND "current command run when called."
+ STREAMLOGON david
+ DESCRIPTION "text description of job1"
+ TASKTYPE Unix
+ RECOVERY STOP
+
+
+Edit this file.  Change the name from Job1 so we do not overwrite Job1 in the database.
+$JOBS
+COMPUTER1#MY-JOB1
+ DOCOMMAND "pwd; ls; sleep 66; date;"
+ STREAMLOGON david
+ DESCRIPTION "Test job running simple Unix commands."
+ TASKTYPE Unix
+ RECOVERY STOP
+
+By using an existing job, we can be sure our syntax is right and the user name after STREAMLOGON is good.
+When you have changed it, test it and submit it to the IWS database:
+Test the definition with "composer validate"
+command-prompt$> composer validate my.jobs
+ should say "validated"
+Submit this new job to IWS:
+command-prompt$> composer add my.jobs
+
+View the job in IWS' database:
+command-prompt$> composer list j computer1#my-job1
+command-prompt$> composer display j computer1#my-job1
+
+
+Assuming that all went well, we will now submit the job to run it. Notice that 
+running the job uses "conman" while creating it uses "composer":
+command-prompt$> conman submit job computer1#my-job1 
+This puts the job into a jobstream called "jobs".
+To view it:
+command-prompt$> conman sj computer1#jobs.my-job1
+or:
+command-prompt$> conman sj computer1#jobs
+At first it will show READY. Then will show EXEC and then SUCC. Our job should run 66 seconds since we have sleep 66 in it.
+While it is running and after it finishes, we can view its output with "standardlist".
+
+command-prompt$> conman sj computer1#jobs.my-job1 stdl 
+To repeat the above steps, rerun the job:
+command-prompt$> conman rerun computer1#jobs.my-job1
+
+
+
+To clean up IWS' database, you may remove the job you created, again using composer for the 
+database commands. First view it:
+
+command-prompt$> composer list j computer1#my-job1
+
+command-prompt$> composer delete j computer1#my-job1
+You will be prompted with delete COMPUTER1#MY-JOB1("y" for yes, "n" for no). 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
