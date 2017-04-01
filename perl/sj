@@ -1,0 +1,31 @@
+#!/usr/bin/perl -w
+# lets user use short-hand for conman sj  and  conman "setsym 2 sj " commands.
+#     sj computer#jobStream          # for today's schedules
+# or  sj computer#jobStream 2        # for setsym 2 schedule
+# or  sj 2 computer#jobStream        # likewise, for setsym 2 schedule
+#
+# Script also filters out the ibm BS that we do not want to see, letting us see 
+# the output better.
+
+use strict;
+
+my $setsym = '';
+my $first= $ARGV[0];
+my $last = $ARGV[$#ARGV];
+
+if( $first =~ /^\d{1,4}$/ ){
+    $setsym = "setsym " . shift ." &";
+    if ( $last =~ /^\d{1,4}$/ ) {
+       print "Warning: ",$first, " and ", $last, " are numbers. Dropping last $last\n";
+       $ARGV[$#ARGV] = '';
+    }
+}
+elsif ( $last =~ /^\d{1,4}$/ ) {
+    $setsym = "setsym " . $ARGV[$#ARGV] ." &";
+    $ARGV[$#ARGV] = '';
+}
+
+#  `echo 'conman $setsym sj @ARGV 2>/dev/null' | grep -ve "^Scheduled for" -ve "^Workstation " -ve "(Est)" >> sj_output `;
+`conman "$setsym sj @ARGV" 2>/dev/null' | grep -ve "^Scheduled for" -ve "^Workstation " -ve "(Est)" `
+# print('conman $setsym sj @ARGV 2>/dev/null | grep -ve "^Scheduled for" -ve "^Workstation " -ve "(Est)', "\n");
+
