@@ -3,29 +3,30 @@
 #     sj computer#jobStream          # for today's schedules
 # or  sj computer#jobStream 2        # for setsym 2 schedule
 # or  sj 2 computer#jobStream        # likewise, for setsym 2 schedule
+# or  sj  computer#jobStream 2 stdl        # likewise, for setsym 2 schedule
+# or  sj  computer#jobStream  stdl  2      # likewise, for setsym 2 schedule
 #
-# Script also filters out the ibm BS that we do not want to see, letting us see 
+# Script also filters out the ibm BS that we do not want to see, letting us see
 # the output better.
 
 use strict;
 
-my $setsym = '';
-my $first= $ARGV[0];
-my $last = $ARGV[$#ARGV];
-
-if( $first =~ /^\d{1,4}$/ ){
-    $setsym = "setsym " . shift ." &";
-    if ( $last =~ /^\d{1,4}$/ ) {
-       print "Warning: ",$first, " and ", $last, " are numbers. Dropping last $last\n";
-       $ARGV[$#ARGV] = '';
-    }
-}
-elsif ( $last =~ /^\d{1,4}$/ ) {
-    $setsym = "setsym " . $ARGV[$#ARGV] ." &";
-    $ARGV[$#ARGV] = '';
+my @args;
+my $ssym = '';
+foreach (@ARGV){
+   if ( /\D/ ){                            # if not a number
+      push @args, $_;
+   } else {
+      if ( $ssym ) {
+         print "Too many numbers. Dropping $_ \n";
+      } else {
+         $ssym = "setsym " . $_ ." &";
+      }
+   }
 }
 
-#  `echo 'conman $setsym sj @ARGV 2>/dev/null' | grep -ve "^Scheduled for" -ve "^Workstation " -ve "(Est)" >> sj_output `;
-`conman "$setsym sj @ARGV" 2>/dev/null' | grep -ve "^Scheduled for" -ve "^Workstation " -ve "(Est)" `
-# print('conman $setsym sj @ARGV 2>/dev/null | grep -ve "^Scheduled for" -ve "^Workstation " -ve "(Est)', "\n");
+`conman "$ssym sj @args" 2>/dev/null | grep -ve "^Scheduled for" -ve "^Workstation " -ve "(Est)" `;
+
+# `echo 'conman $ssym sj @args 2>/dev/null' | grep -ve "^Scheduled for" -ve "^Workstation " -ve "(Est)" >> sj_output `;
+# print('conman $ssym sj @args 2>/dev/null | grep -ve "^Scheduled for" -ve "^Workstation " -ve "(Est)', "\n");
 
