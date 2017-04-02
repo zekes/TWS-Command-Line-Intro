@@ -1,39 +1,27 @@
 #!/bin/bash
-
 # lets user use short-hand for conman sj  and  conman "setsym 2 sj " commands.
 #     sj computer#jobStream          # for today's schedules
 # or  sj computer#jobStream 2        # for setsym 2 schedule
 # or  sj 2 computer#jobStream        # likewise, for setsym 2 schedule
+# or  sj  computer#jobStream 2 stdl        # likewise, for setsym 2 schedule
+# or  sj  computer#jobStream  stdl  2      # likewise, for setsym 2 schedule
 #
-# Script also filters out the ibm BS that we do not want to see, letting us see 
+# Script also filters out the ibm BS that we do not want to see, letting us see
 # the output better.
 
-for last; do true; done          # get last arg, store it in last
-last_is_numb=1
-if [[ $last =~ [^[:digit:]] ]]
-then
-    last_is_numb=0
-fi
-first_is_numb=1
-if [[  $1 =~ [^[:digit:]] ]]
-then
-	first_is_numb=0
-fi
-
-if [[ $first_is_numb -eq 1 ]]
-then 
-    if [[ $last_is_numb -eq 1 ]]
-    then
-       echo WARNING! Too many numbers, using first arg.
-       set -- "${@:1:$(($#-1))}"       # remove last arg from arglist
+args=()
+for a in "$@" 
+do 
+   if [[ $a =~ [^[:digit:]] ]]; then
+		 args+=($a)
+   elif [ -z "$ssd" ]; then
+         ssd="setsym $a &"
+   else
+		 echo Too many numbers. Dropping $a.
    fi
-   ssd="setsym $1 &"
-   shift
-elif [[ $last_is_numb -eq 1 ]]
-then
-  ssd="setsym $last &"
-  set -- "${@:1:$(($#-1))}"       # remove last arg from arglist
-fi
+done
 
-echo "conman \"$ssd sj $@\" 2>/dev/null" | grep -ve "^Scheduled for" -ve "^Workstation " -ve "(Est)"
+conman \"$ssd sj ${args[@]}\" 2>/dev/null | grep -ve "^Scheduled for" -ve "^Workstation " -ve "(Est)"
 
+
+# echo "conman \"$ssd sj ${args[@]}\" 2>/dev/null" | grep -ve "^Scheduled for" -ve "^Workstation " -ve "(Est)"
