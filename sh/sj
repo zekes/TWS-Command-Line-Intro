@@ -10,14 +10,14 @@
 # the output better.
 
 args=()
-for a in "$@" 
-do 
+for a in "$@"
+do
    if [[ $a =~ [^[:digit:]] ]]; then
-		 args+=($a)
+      args+=($a)
    elif [ -z "$ssd" ]; then
-         ssd="setsym $a &"
+      ssd="setsym $a &"
    else
-		 echo Too many numbers. Dropping $a.
+      echo Too many numbers. Dropping $a.
    fi
 done
 
