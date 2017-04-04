@@ -9,16 +9,17 @@
 # Script also filters out the ibm BS that we do not want to see, letting us see
 # the output better.
 
-args=()
-for a in "$@"
-do
-   if [[ $a =~ [^[:digit:]] ]]; then
-      args+=($a)
-   elif [ -z "$ssd" ]; then
-      ssd="setsym $a &"
-   else
-      echo Too many numbers. Dropping $a.
-   fi
+args=''
+for a in "$@" 
+do 
+  if [[ $a =~ [^[:digit:]] ]]; then         # not a number
+     # args+=($a)
+     args="args $a"
+  elif [ -z "$ssd" ]; then
+     ssd="setsym $a &"
+  else
+     echo Too many numbers. Dropping $a.
+  fi
 done
 
 conman \"$ssd sj ${args[@]}\" 2>/dev/null | grep -ve "^Scheduled for" -ve "^Workstation " -ve "(Est)"
