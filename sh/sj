@@ -14,7 +14,7 @@ for a in "$@"
 do 
   if [[ $a =~ [^[:digit:]] ]]; then         # not a number
      # args+=($a)
-     args="args $a"
+     args="$args $a"
   elif [ -z "$ssd" ]; then
      ssd="setsym $a &"
   else
@@ -22,7 +22,7 @@ do
   fi
 done
 
-conman \"$ssd sj ${args[@]}\" 2>/dev/null | grep -ve "^Scheduled for" -ve "^Workstation " -ve "(Est)"
+conman \"$ssd sj $args\" 2>/dev/null | grep -ve "^Scheduled for" -ve "^Workstation " -ve "(Est)"
 
 
-# echo "conman \"$ssd sj ${args[@]}\" 2>/dev/null" | grep -ve "^Scheduled for" -ve "^Workstation " -ve "(Est)"
+# echo "conman \"$ssd sj $args\" 2>/dev/null" | grep -ve "^Scheduled for" -ve "^Workstation " -ve "(Est)"

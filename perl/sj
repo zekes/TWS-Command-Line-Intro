@@ -25,7 +25,7 @@ foreach (@ARGV){
    }
 }
 
-`conman "$ssym sj @args" 2>/dev/null | grep -ve "^Scheduled for" -ve "^Workstation " -ve "(Est)" `;
+print `conman "$ssym sj @args" 2>/dev/null | grep -ve "^Scheduled for" -ve "^Workstation " -ve "(Est)" `;
 
 # `echo 'conman $ssym sj @args 2>/dev/null' | grep -ve "^Scheduled for" -ve "^Workstation " -ve "(Est)" >> sj_output `;
 # print('conman $ssym sj @args 2>/dev/null | grep -ve "^Scheduled for" -ve "^Workstation " -ve "(Est)', "\n");
