@@ -6,7 +6,7 @@
 # or  sj  computer#jobStream 2 stdl        # likewise, for setsym 2 schedule
 # or  sj  computer#jobStream  stdl  2      # likewise, for setsym 2 schedule
 #
-# Script also filters out the ibm BS that we do not want to see, letting us see the output better.
+# Script also filters out the ibm trademark clutter that we do not want to see, letting us see the output better.
 
 args=''
 for a in "$@" 
