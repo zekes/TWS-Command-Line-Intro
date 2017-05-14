@@ -2,25 +2,30 @@
 # lets user use short-hand for conman sj  and  conman "setsym 2 sj " commands.
 #     sj computer#jobStream          # for today's schedules
 # or  sj computer#jobStream 2        # for setsym 2 schedule
-# or  sj 2 computer#jobStream        # likewise, for setsym 2 schedule
+# or  sj 2 computer#jobStream   3 4     # likewise, for setsym 2 schedule And setsym 3 schedule And setsym 4 schedule
 # or  sj  computer#jobStream 2 stdl        # likewise, for setsym 2 schedule
 # or  sj  computer#jobStream  stdl  2      # likewise, for setsym 2 schedule
 #
-# Script also filters out the ibm trademark clutter that we do not want to see, letting us see the output better.
+# Script also filters out the ibm trademark clutter, letting us see the output better.
 
 args=''
+ss=''
 for a in "$@" 
 do 
   if [[ $a =~ [^[:digit:]] ]]; then         # not a number
      args="$args $a"
-  elif [ -z "$ssd" ]; then
-     ssd="setsym $a &"
   else
-     echo Too many numbers. Dropping $a. >&2
+     ss="$ss $a"
   fi
 done
 
-conman \"$ssd sj $args\" 2> >( tail -n +8 1>&2 ) | grep -ve "^Scheduled for" -ve "^Workstation " -ve "(Est)"
-# 2> >(tail ... )  removes ibm head clutter from stderr then redirects back to stderr
 
+if [ -z "$ss" ]; then
+   conman \"sj $args\" 2> >( tail -n +8 1>&2 ) | grep -ve "^Scheduled for" -ve "^Workstation " -ve "(Est)"
+                     # 2> >(tail ... )  removes ibm copyright clutter from stderr then redirects back to stderr
+else
+   for i in $ss; do
+     conman \"setsym $i & sj $args\" 2> >( tail -n +8 1>&2 ) | grep -ve "^Scheduled for" -ve "^Workstation " -ve "(Est)"
+   done
+fi
 
