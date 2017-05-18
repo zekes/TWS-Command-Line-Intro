@@ -21,11 +21,11 @@ done
 
 
 if [ -z "$ss" ]; then
-   conman \"sj $args\" 2> >( tail -n +8 1>&2 ) | grep -ve "^Scheduled for" -ve "^Workstation " -ve "(Est)"
-                     # 2> >(tail ... )  removes ibm copyright clutter from stderr then redirects back to stderr
+   conman "sj $args" 2> >( tail -n +9 1>&2 ) | grep -ve "^Scheduled for" -ve "^Workstation " -ve "(Est)"
+                   # 2> >(tail ... )  removes ibm copyright clutter from stderr then redirects back to stderr
 else
    for i in $ss; do
-     conman \"setsym $i & sj $args\" 2> >( tail -n +8 1>&2 ) | grep -ve "^Scheduled for" -ve "^Workstation " -ve "(Est)"
+     conman "setsym $i & sj $args" 2> >( tail -n +9 1>&2 ) | grep -ve "^Scheduled for" -ve "^Workstation " -ve "(Est)"
    done
 fi
 
